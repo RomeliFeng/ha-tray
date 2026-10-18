@@ -14,10 +14,4 @@
 - 用户实际操作一遍：开关、滑条、±、弹出菜单、星标放到主界面、Esc 返回。
 - `design.md` 4.1 表里有的类型还没用真设备试过：窗帘、门锁、播放器、扫地机、热水器、警报。演示数据里有样例。
 - 传感器 24 小时曲线（`design.md` 4.1 sensor 一行，第二期）。
-- 发布到公开仓库 `RomeliFeng/ha-tray`（提交用它的匿名邮箱）。顺序：
-  1. 重写 README（已完成，等用户看过）；
-  2. 再跑一次 `tools\check-privacy.ps1`；
-  3. 建仓库、推送；
-  4. Release 打包（zip）、README 截图。
-
-  每一步推送、发布都先问用户。
+- 已推送到公开仓库 https://github.com/RomeliFeng/ha-tray（2026-10-18）。还没做：Release 打包（zip）。每次推送、发布前都先跑 `tools\check-privacy.ps1`，并先问用户。
