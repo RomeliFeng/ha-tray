@@ -15,8 +15,10 @@
 - `design.md` 4.1 表里有的类型还没用真设备试过：窗帘、门锁、播放器、扫地机、热水器、警报。演示数据里有样例。
 - 传感器 24 小时曲线（`design.md` 4.1 sensor 一行，第二期）。
 - README 还是嵌入网页那一版的说明，要重写。
-- 发布：GitHub 仓库、Release 打包（zip）、README 截图。都要先问用户。
+- 发布到公开仓库 `RomeliFeng/ha-tray`（提交用它的匿名邮箱）。顺序：
+  1. 重写 README；
+  2. 再跑一次 `tools\check-privacy.ps1`；
+  3. 建仓库、推送；
+  4. Release 打包（zip）、README 截图。
 
-## 等用户定
-
-- 仓库公开还是私有（GitHub 账号是 RomeliFeng，提交用它的匿名邮箱）。
+  每一步推送、发布都先问用户。
