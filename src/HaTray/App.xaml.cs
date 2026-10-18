@@ -8,7 +8,8 @@ namespace HaTray;
 
 /// <summary>
 /// 托盘常驻：没有主窗口，只有托盘图标、弹出面板和设置窗口。只允许一个实例。
-/// 参数：--demo 用内置假数据，不连 HA；--debug 打开文字调试通道（见 FlyoutWindow.EnableDebug）。
+/// 参数：--demo 用内置假数据，不连 HA；--debug 打开文字调试通道（见 FlyoutWindow.EnableDebug）；
+/// --lang=zh / --lang=en 只在这次运行里固定界面语言，不改设置（tools\make-screenshots.ps1 截中英两套图用）。
 /// </summary>
 public partial class App : Application
 {
@@ -38,7 +39,7 @@ public partial class App : Application
         }
 
         _settings = Settings.Load();
-        L.Init(_settings.Language);
+        L.Init(Environment.GetCommandLineArgs().FirstOrDefault(a => a.StartsWith("--lang=", StringComparison.Ordinal))?[7..] ?? _settings.Language);
 
         _flyout = new FlyoutWindow(_settings, _home);
         _flyout.SettingsRequested += OpenSettings;

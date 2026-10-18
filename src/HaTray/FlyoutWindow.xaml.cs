@@ -909,7 +909,7 @@ internal sealed partial class FlyoutWindow : Window, IPanelEdits
             ready = _backend?.Ready,
             admin = _backend?.IsAdmin,
             error = _backend?.Error,
-            window = new { visible = AppWindow.IsVisible, w = AppWindow.Size.Width, h = AppWindow.Size.Height, theme = Root.ActualTheme.ToString() },
+            window = new { visible = AppWindow.IsVisible, x = AppWindow.Position.X, y = AppWindow.Position.Y, w = AppWindow.Size.Width, h = AppWindow.Size.Height, theme = Root.ActualTheme.ToString() },
             page = new { room = _roomId, page = _page.ToString(), detail = _detailId, editing = _view.Editing, sheet = SheetHost.Visibility == Visibility.Visible, rows = Body.Children.Count, drawn = _view.Debug },
             dragLog = _view.DragLog,
             counts = new

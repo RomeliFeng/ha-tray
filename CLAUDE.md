@@ -27,12 +27,12 @@ Home Assistant 的 Windows 托盘弹出面板（WinUI 3 + .NET 10，不打包）
 | `Ui/Controller.cs` | 发控制命令、等待中、出错、± 防抖、图标按钮的主动作 |
 | `FlyoutWindow.xaml(.cs)` | 窗口、顶栏、页面切换、写回 HA 的入口、调试通道 |
 | `App.xaml(.cs)` | 托盘、单实例、后端切换；`App.xaml` 里有两套按钮模板 |
-| `tools/` | `make-icons.ps1` 生成图标，`fetch-mdi.ps1` 下载图标字体，`check-privacy.ps1` 推送前查个人资料 |
+| `tools/` | `make-icons.ps1` 生成图标，`fetch-mdi.ps1` 下载图标字体，`check-privacy.ps1` 推送前查个人资料，`make-screenshots.ps1` 用演示数据截 README 的中英两套截图（docs/images） |
 
 ## 开发
 
 - 构建：`dotnet build src\HaTray -c Debug -p:Platform=x64`。改代码前先关掉正在跑的 HaTray，否则 exe 被占用，构建失败。
-- `HaTray.exe --demo`：用内置假数据跑，不连 HA。
+- `HaTray.exe --demo`：用内置假数据跑，不连 HA。`--lang=zh|en` 只在这次运行里固定界面语言。界面改了以后重跑 `tools\make-screenshots.ps1` 更新 README 截图。
 - `HaTray.exe --debug`：文字调试通道。往 `%LOCALAPPDATA%\HaTray\debug-cmd.txt` 写一行命令，读 `debug-result.json`。写一次命令文件常常触发两次，命令都要能重复执行，不做切换。
   - 页面：`dump`（加 `all` 时连「更多设备」一起展开）、`show`（弹出并保持打开）、`hide`、`room <区域 id>`（不带 id 是「未分配区域」）、`more`、`detail <实体 id>`、`back`。结果里 `page.drawn` 列出这一页画了哪些胶囊、磁贴、设备卡。
   - 编辑模式：`edit`、`done`、`settings <实体 id>`、`pin` / `unpin <实体 id>`、`order <实体 id,…>`。结果里 `dragLog` 是拖动日志。
