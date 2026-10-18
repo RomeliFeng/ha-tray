@@ -19,6 +19,8 @@
     <!-- 不打包：一个文件夹拷走就能跑，Windows App SDK 运行时随程序带上。 -->
     <WindowsPackageType>None</WindowsPackageType>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <!-- 不打包的程序 dotnet publish 时也要生成 HaTray.pri 和 .xbf；不开这项，发布出来的程序一启动就因为找不到 FlyoutWindow.xaml 崩溃。 -->
+    <EnableMsixTooling>true</EnableMsixTooling>
 
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -33,7 +35,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
+    <!--
+      只引用 WinUI 这一个子包（它自己依赖 Foundation、InteractiveExperiences、Base）。
+      完整的 Microsoft.WindowsAppSDK 会带上 AI、ML、搜索、小组件（onnxruntime、DirectML 等），本程序用不到，发布包会多出 100 MB 左右。
+    -->
+    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.3.9" />
+    <!-- WinUI 2.3.9 要的 2.1.8 在 NuGet 上没有，写明用 2.1.9（不写也会解析成它，只是报 NU1603）。 -->
+    <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="2.1.9" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.0" />
   </ItemGroup>
 </Project>

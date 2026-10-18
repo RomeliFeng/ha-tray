@@ -27,6 +27,19 @@ public partial class App : Application
     public App()
     {
         InitializeComponent();
+
+        // 没人处理的异常写进 %LOCALAPPDATA%\HaTray\crash.log（程序照样退出），排查崩溃用。
+        UnhandledException += (_, e) =>
+        {
+            try
+            {
+                Directory.CreateDirectory(Settings.DataDir);
+                File.AppendAllText(Path.Combine(Settings.DataDir, "crash.log"), $"{DateTime.Now:O}\n{e.Exception}\n{e.Message}\n\n");
+            }
+            catch (IOException)
+            {
+            }
+        };
     }
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
