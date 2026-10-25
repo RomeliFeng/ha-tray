@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="..\..\src\HaTray\Model\Entity.cs" Link="Entity.cs" />
+    <Compile Include="..\..\src\HaTray\Model\Home.cs" Link="Home.cs" />
+    <Compile Include="..\..\src\HaTray\Model\ReminderEngine.cs" Link="ReminderEngine.cs" />
+    <Compile Include="..\..\src\HaTray\Model\ReminderRule.cs" Link="ReminderRule.cs" />
+    <Compile Include="..\..\src\HaTray\Model\Translations.cs" Link="Translations.cs" />
+  </ItemGroup>
+</Project>

@@ -33,6 +33,8 @@ internal interface IPanelEdits
 
     /// <summary>打开磁贴设置面板。</summary>
     void OpenSettings(Entity e);
+
+    void OpenReminders(Entity e);
 }
 
 /// <summary>

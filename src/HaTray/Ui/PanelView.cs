@@ -1055,8 +1055,13 @@ internal sealed partial class PanelView(Home home, Presenter pr, Controller ctl,
 
     // ======================= 详情页 =======================
 
-    public void BuildDetail(StackPanel body, Entity e, Room? room) =>
+    public void BuildDetail(StackPanel body, Entity e, Room? room)
+    {
         body.Children.Add(Live(e.Domain == "climate" && room is not null && RoomTemperature(room) is { } t ? [e.EntityId, t.EntityId] : [e.EntityId], () => Detail(e, room)));
+        var reminder = _k.PlainButton(L.T("提醒", "Notifications") + " · " + RemindersWindow.Summary(e), "bell-outline", () => edits.OpenReminders(e), 32);
+        reminder.Margin = new Thickness(0, 12, 0, 0);
+        body.Children.Add(reminder);
+    }
 
     private UIElement Detail(Entity e, Room? room)
     {

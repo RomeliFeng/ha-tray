@@ -16,9 +16,9 @@
     <Platforms>x64;ARM64</Platforms>
 
     <UseWinUI>true</UseWinUI>
-    <!-- 不打包：一个文件夹拷走就能跑，Windows App SDK 运行时随程序带上。 -->
+    <!-- 不打包，但依赖系统已安装的 Windows App Runtime，不把运行库复制进发布目录。 -->
     <WindowsPackageType>None</WindowsPackageType>
-    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
     <!-- 不打包的程序 dotnet publish 时也要生成 HaTray.pri 和 .xbf；不开这项，发布出来的程序一启动就因为找不到 FlyoutWindow.xaml 崩溃。 -->
     <EnableMsixTooling>true</EnableMsixTooling>
 
@@ -43,5 +43,6 @@
     <!-- WinUI 2.3.9 要的 2.1.8 在 NuGet 上没有，写明用 2.1.9（不写也会解析成它，只是报 NU1603）。 -->
     <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="2.1.9" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.0" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="2.5.1" />
   </ItemGroup>
 </Project>

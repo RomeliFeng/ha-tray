@@ -197,10 +197,11 @@ internal sealed class DemoBackend(Home home, DispatcherQueue ui, string labelNam
     {
         _entities.Add(new JsonObject
         {
-            ["entity_id"] = entityId, ["device_id"] = device, ["area_id"] = device is null ? area : null,
+            ["entity_id"] = entityId, ["id"] = "demo_" + entityId, ["device_id"] = device, ["area_id"] = device is null ? area : null,
             ["name"] = null, ["original_name"] = zh is null ? null : L.T(zh, en!), ["icon"] = null, ["platform"] = "demo",
             ["translation_key"] = null, ["entity_category"] = category, ["hidden_by"] = null, ["disabled_by"] = null,
             ["labels"] = tray ? new JsonArray("demo_tray") : new JsonArray(), ["options"] = new JsonObject(),
+            ["capabilities"] = new JsonObject { ["options"] = attrs?["options"]?.DeepClone(), ["event_types"] = attrs?["event_types"]?.DeepClone() },
         });
         var a = attrs ?? [];
         a["supported_features"] = features;
@@ -256,6 +257,9 @@ internal sealed class DemoBackend(Home home, DispatcherQueue ui, string labelNam
         Device("d_dehum", "bedroom", "除湿机", "Dehumidifier");
         Add("humidifier.bedroom_dehumidifier", "d_dehum", null, null, null, "on", new() { ["device_class"] = "dehumidifier", ["min_humidity"] = 40, ["max_humidity"] = 70, ["humidity"] = 50, ["current_humidity"] = 58, ["action"] = "drying", ["available_modes"] = new JsonArray("auto", "sleep", "dry_clothes"), ["mode"] = "auto" }, tray: true, features: 1);
         Add("select.bedroom_dehumidifier_fan", "d_dehum", null, "风机档位", "Fan level", "2", new() { ["options"] = new JsonArray("1", "2", "3") });
+        Add("sensor.bedroom_dehumidifier_condition", "d_dehum", null, "设备状态", "Condition", "ready",
+            new() { ["device_class"] = "enum", ["options"] = new JsonArray("ready", "reservoir_full", "service_due", "cooling") });
+        Add("button.bedroom_dehumidifier_filter_reset", "d_dehum", null, "重置滤网", "Reset filter", "unknown");
         Add("switch.bedroom_dehumidifier_child_lock", "d_dehum", null, "童锁", "Child lock", "off", new() { ["device_class"] = "switch" }, category: "config");
         Add("number.bedroom_dehumidifier_timer", "d_dehum", null, "定时", "Timer", "0", new() { ["min"] = 0, ["max"] = 1440, ["step"] = 1, ["mode"] = "auto", ["unit_of_measurement"] = "min" });
         Device("d_occ", "bedroom", "人体传感器", "Presence sensor");
@@ -286,6 +290,8 @@ internal sealed class DemoBackend(Home home, DispatcherQueue ui, string labelNam
         Add("event.hall_door_unlocked", "d_lock", null, "开锁", "Unlocked", "2026-10-18T05:27:34+00:00", new() { ["event_types"] = new JsonArray("unlocked"), ["event_type"] = "unlocked" });
         Device("d_contact", "hall", "门磁", "Door sensor");
         Add("binary_sensor.hall_door_contact", "d_contact", null, null, null, "off", new() { ["device_class"] = "door" }, tray: true);
+        Add("event.hall_sensor_warning", "d_contact", null, "设备提醒", "Device warning", "unknown",
+            new() { ["event_types"] = new JsonArray("low_power", "case_open"), ["event_type"] = null, ["code"] = 0 });
         Add("alarm_control_panel.home", null, "hall", "家庭警报", "Home alarm", "disarmed", new() { ["code_format"] = null }, tray: true, features: 1 | 2 | 4);
         Add("siren.hall", null, "hall", "警笛", "Siren", "off", features: 1 | 2);
         Add("counter.hall_visitors", null, "hall", "访客", "Visitors", "3", new() { ["minimum"] = 0, ["maximum"] = null, ["step"] = 1 });
@@ -345,6 +351,13 @@ internal sealed class DemoBackend(Home home, DispatcherQueue ui, string labelNam
         S("timer", "_", "idle", "空闲", "Idle");
         S("water_heater", "_", "eco", "节能", "Eco");
         S("update", "_", "on", "有更新", "Update available");
+        S("sensor", "enum", "ready", "就绪", "Ready");
+        S("sensor", "enum", "reservoir_full", "水箱满", "Reservoir full");
+        S("sensor", "enum", "service_due", "需要维护", "Service due");
+        S("sensor", "enum", "cooling", "冷却中", "Cooling");
+        t["component.event.entity_component._.state_attributes.event_type.state.low_power"] = L.T("低电量", "Low power");
+        t["component.event.entity_component._.state_attributes.event_type.state.case_open"] = L.T("外壳打开", "Case open");
+        t["component.event.entity_component._.state_attributes.event_type.state.finished"] = L.T("已完成", "Finished");
         return t;
     }
 

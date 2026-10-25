@@ -33,7 +33,7 @@ Home Assistant 的 Windows 托盘弹出面板（WinUI 3 + .NET 10，不打包）
 
 - 构建：`dotnet build src\HaTray -c Debug -p:Platform=x64`。改代码前先关掉正在跑的 HaTray，否则 exe 被占用，构建失败。
 - `HaTray.exe --demo`：用内置假数据跑，不连 HA。`--lang=zh|en` 只在这次运行里固定界面语言。界面改了以后重跑 `tools\make-screenshots.ps1` 更新 README 截图。
-- `HaTray.exe --debug`：文字调试通道。往 `%LOCALAPPDATA%\HaTray\debug-cmd.txt` 写一行命令，读 `debug-result.json`。写一次命令文件常常触发两次，命令都要能重复执行，不做切换。
+- `HaTray.exe --debug`：文字调试通道。正常模式使用 `%LOCALAPPDATA%\HaTray\debug-cmd.txt` 和 `debug-result.json`；`--demo` 改用程序目录下的 `DemoData`，避免读取本机真实设置。写一次命令文件常常触发两次，命令都要能重复执行，不做切换。
   - 页面：`dump`（加 `all` 时连「更多设备」一起展开）、`show`（弹出并保持打开）、`hide`、`room <区域 id>`（不带 id 是「未分配区域」）、`more`、`detail <实体 id>`、`back`。结果里 `page.drawn` 列出这一页画了哪些胶囊、磁贴、设备卡。
   - 编辑模式：`edit`、`done`、`settings <实体 id>`、`pin` / `unpin <实体 id>`、`order <实体 id,…>`。结果里 `dragLog` 是拖动日志。
   - 检查：`badges`（−、图钉有没有重叠、被裁）、`chips`（胶囊格子的实际尺寸）、`texts`（页面上全部文字，查中英混杂和注释性质的文字）。**改了布局或文字，每个房间都跑一遍再交给用户看。**

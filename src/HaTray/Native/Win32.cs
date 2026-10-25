@@ -134,6 +134,9 @@ internal static class Win32
     public static extern uint GetDpiForSystem();
 
     [DllImport("user32.dll")]
+    public static extern uint GetDpiForWindow(nint hwnd);
+
+    [DllImport("user32.dll")]
     public static extern nint CreatePopupMenu();
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]

@@ -38,6 +38,13 @@ internal sealed class Home
     /// <summary>这些实体的状态变了。</summary>
     public event Action<IReadOnlyCollection<string>>? StatesChanged;
 
+    public bool HasSnapshot { get; private set; }
+
+    /// <summary>仅在首批 subscribe_entities 回调期间为 true；旧事件不能重放。</summary>
+    public bool IsInitialSnapshot { get; private set; }
+
+    public event Action? StatesReset;
+
     public void SetAreas(JsonElement areas)
     {
         Areas = [.. areas.EnumerateArray().Select(a => new Area(
@@ -88,6 +95,9 @@ internal sealed class Home
             seen.Add(id);
             var e = GetOrAdd(id);
             e.InRegistry = true;
+            e.RegistryId = J.Str(r, "id");
+            e.Capabilities = r.TryGetProperty("capabilities", out var caps) && caps.ValueKind == JsonValueKind.Object
+                ? JsonNode.Parse(caps.GetRawText())!.AsObject() : [];
             e.Name = J.Str(r, "name");
             e.OriginalName = J.Str(r, "original_name");
             e.DeviceId = J.Str(r, "device_id");
@@ -111,6 +121,8 @@ internal sealed class Home
             if (e.HasState)
             {
                 e.InRegistry = false;
+                e.RegistryId = null;
+                e.Capabilities = [];
                 e.Name = e.OriginalName = e.DeviceId = e.OwnAreaId = e.Icon = e.Platform = e.TranslationKey = e.Category = null;
                 e.Hidden = e.Disabled = false;
                 e.Labels = [];
@@ -149,6 +161,8 @@ internal sealed class Home
     /// </summary>
     public void ApplyEntitiesEvent(JsonElement ev)
     {
+        IsInitialSnapshot = !HasSnapshot;
+        HasSnapshot = true;
         var changed = new HashSet<string>();
         var structural = false;
         if (ev.TryGetProperty("a", out var added))
@@ -240,11 +254,15 @@ internal sealed class Home
         {
             StatesChanged?.Invoke(changed);
         }
+
+        IsInitialSnapshot = false;
     }
 
     /// <summary>断线重连前清掉状态，重连后由 subscribe_entities 的第一条事件重新填。</summary>
     public void ClearStates()
     {
+        HasSnapshot = false;
+        StatesReset?.Invoke();
         foreach (var e in _entities.Values.Where(e => !e.InRegistry).ToList())
         {
             _entities.Remove(e.EntityId);
@@ -291,10 +309,7 @@ internal sealed class Home
         if (r.TryGetProperty("options", out var o) && o.ValueKind == JsonValueKind.Object
             && o.TryGetProperty(TrayOptions.Domain, out var t) && t.ValueKind == JsonValueKind.Object)
         {
-            return new TrayOptions(
-                t.TryGetProperty("order", out var order) && order.ValueKind == JsonValueKind.Number ? order.GetInt32() : null,
-                J.Str(t, "size"),
-                t.TryGetProperty("pinned", out var pinned) && pinned.ValueKind == JsonValueKind.True);
+            return TrayOptions.FromJson(t);
         }
 
         return TrayOptions.None;

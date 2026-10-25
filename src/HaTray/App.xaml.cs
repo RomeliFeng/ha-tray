@@ -3,6 +3,9 @@ using HaTray.Model;
 using HaTray.Native;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
+using Microsoft.Windows.AppLifecycle;
+using Microsoft.Windows.AppNotifications;
+using Windows.ApplicationModel.Activation;
 
 namespace HaTray;
 
@@ -13,11 +16,14 @@ namespace HaTray;
 /// </summary>
 public partial class App : Application
 {
-    private const int MenuOpen = 1, MenuBrowser = 2, MenuSettings = 3, MenuStartup = 4, MenuExit = 9;
+    private const int MenuOpen = 1, MenuBrowser = 2, MenuSettings = 3, MenuStartup = 4, MenuReminders = 5, MenuExit = 9;
 
     private readonly bool _demo = Environment.GetCommandLineArgs().Contains("--demo");
     private readonly Home _home = new();
-    private Mutex? _singleInstance;
+    private AppInstance? _instance;
+    private DesktopNotifications? _notifications;
+    private ReminderService? _reminders;
+    private RemindersWindow? _remindersWindow;
     private Settings _settings = new();
     private TrayIcon? _tray;
     private FlyoutWindow? _flyout;
@@ -36,26 +42,39 @@ public partial class App : Application
                 Directory.CreateDirectory(Settings.DataDir);
                 File.AppendAllText(Path.Combine(Settings.DataDir, "crash.log"), $"{DateTime.Now:O}\n{e.Exception}\n{e.Message}\n\n");
             }
-            catch (IOException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
             }
         };
     }
 
-    protected override void OnLaunched(LaunchActivatedEventArgs args)
+    protected override async void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
     {
-        _singleInstance = new Mutex(true, @"Local\HaTray.SingleInstance", out var created);
-        if (!created)
+        var ui = DispatcherQueue.GetForCurrentThread();
+        _instance = AppInstance.FindOrRegisterForKey("HaTray");
+        if (!_instance.IsCurrent)
         {
+            await _instance.RedirectActivationToAsync(AppInstance.GetCurrent().GetActivatedEventArgs());
             Exit();
             return;
         }
 
+        _instance.Activated += (_, activation) => ui.TryEnqueue(() => HandleActivation(activation));
         _settings = Settings.Load();
         L.Init(Environment.GetCommandLineArgs().FirstOrDefault(a => a.StartsWith("--lang=", StringComparison.Ordinal))?[7..] ?? _settings.Language);
 
+        _notifications = new DesktopNotifications(ui);
+        _notifications.Invoked += OpenNotification;
+        _notifications.Register();
+
         _flyout = new FlyoutWindow(_settings, _home);
         _flyout.SettingsRequested += OpenSettings;
+        _flyout.RemindersRequested += OpenReminders;
+        _flyout.RemindersPageRequested += OpenRemindersPage;
+        _flyout.ReminderDebug = () => new { error = _reminders?.Error, triggered = _reminders?.Triggered, recent = _reminders?.Recent,
+            notificationId = _notifications.LastId, window = _remindersWindow?.DebugReport };
+        _flyout.TestReminder = () => _reminders?.Test() == true;
+        _flyout.NotificationTarget = entity => _demo && (_notifications?.Show("HA Tray", entity, ReminderService.ServerKey("demo"), entity, "target") ?? false);
         _flyout.Prime();
         if (Environment.GetCommandLineArgs().Contains("--debug"))
         {
@@ -67,6 +86,7 @@ public partial class App : Application
         _tray.ContextMenuRequested += ShowTrayMenu;
 
         _ = ConnectAsync();
+        HandleActivation(AppInstance.GetCurrent().GetActivatedEventArgs());
         if (!_demo && !_settings.IsConfigured)
         {
             OpenSettings();
@@ -76,6 +96,10 @@ public partial class App : Application
     /// <summary>按当前设置换一个后端：演示数据，或连 HA。</summary>
     private async Task ConnectAsync()
     {
+        _remindersWindow?.Close();
+        _remindersWindow = null;
+        _reminders?.Dispose();
+        _reminders = null;
         var old = _backend;
         _backend = null;
         _flyout!.SetBackend(null);
@@ -91,8 +115,62 @@ public partial class App : Application
                 ? new HaSession(_home, ui, new Uri(_settings.Url), token)
                 : null;
         _backend = backend;
+        _reminders = new ReminderService(_home, _settings, _notifications!, ui, _demo);
         _flyout.SetBackend(backend);
         backend?.Start();
+    }
+
+    private void HandleActivation(AppActivationArguments args)
+    {
+        if (args.Kind == ExtendedActivationKind.AppNotification && args.Data is AppNotificationActivatedEventArgs notification)
+        {
+            _notifications?.HandleActivation(notification);
+        }
+        else if (args.Data is ILaunchActivatedEventArgs launch)
+        {
+            var target = launch.Arguments.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .FirstOrDefault(a => a.StartsWith("--open-entity=", StringComparison.Ordinal));
+            if (target is not null)
+            {
+                OpenNotification(ReminderService.ServerKey(_demo ? "demo" : _settings.Url), target[14..]);
+            }
+        }
+    }
+
+    private void OpenNotification(string server, string entity)
+    {
+        if (server != ReminderService.ServerKey(_demo ? "demo" : _settings.Url))
+        {
+            _flyout?.ShowNotice(L.T("这条提醒来自其他 Home Assistant。", "This notification belongs to another Home Assistant."), _tray?.GetRect());
+        }
+        else if (entity.Length == 0)
+        {
+            OpenReminders(null);
+        }
+        else
+        {
+            _flyout?.ShowEntity(entity, _tray?.GetRect());
+        }
+    }
+
+    private void OpenReminders(Entity? entity)
+    {
+        if (_reminders is null) return;
+        if (_remindersWindow is null)
+        {
+            _remindersWindow = new RemindersWindow(_settings, _home, () => _backend, _reminders);
+            _remindersWindow.Closed += (_, _) => _remindersWindow = null;
+        }
+        if (entity is not null) _remindersWindow.Select(entity);
+        _remindersWindow.Activate();
+    }
+
+    private void OpenRemindersPage(string page)
+    {
+        OpenReminders(null);
+        if (_remindersWindow is null) return;
+        if (page == "source") _remindersWindow.ShowSourcePage();
+        else _remindersWindow.ShowListPage();
     }
 
     private void OpenSettings()
@@ -125,6 +203,7 @@ public partial class App : Application
             (MenuOpen, L.T("打开面板", "Open panel"), false),
             (MenuBrowser, L.T("在浏览器中打开 Home Assistant", "Open Home Assistant in browser"), false),
             (0, null, false),
+            (MenuReminders, L.T("提醒…", "Notifications…"), false),
             (MenuSettings, L.T("设置…", "Settings…"), false),
             (MenuStartup, L.T("开机时启动", "Start with Windows"), Settings.StartWithWindows),
             (0, null, false),
@@ -138,6 +217,9 @@ public partial class App : Application
             case MenuBrowser when Uri.TryCreate(_settings.Url, UriKind.Absolute, out var uri):
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
                 break;
+            case MenuReminders:
+                OpenReminders(null);
+                break;
             case MenuSettings:
                 OpenSettings();
                 break;
@@ -150,11 +232,15 @@ public partial class App : Application
         }
     }
 
-    private void Quit()
+    private async void Quit()
     {
+        _remindersWindow?.Close();
+        _reminders?.Dispose();
+        if (_backend is not null) await _backend.DisposeAsync();
+        _notifications?.Dispose();
         _tray?.Dispose();
         _tray = null;
-        _singleInstance?.ReleaseMutex();
+        _instance?.UnregisterKey();
         Exit();
     }
 }

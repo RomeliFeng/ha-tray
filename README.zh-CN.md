@@ -94,7 +94,7 @@ dotnet build src\HaTray -c Release -p:Platform=x64
 | 参数 | 用途 |
 |---|---|
 | `--demo` | 使用内置演示数据运行，不连接 Home Assistant |
-| `--debug` | 启用文字调试通道（`%LOCALAPPDATA%\HaTray\debug-cmd.txt` 与 `debug-result.json`） |
+| `--debug` | 启用文字调试通道。正常模式使用 `%LOCALAPPDATA%\HaTray`；`--demo` 使用程序目录下的 `DemoData` |
 | `--lang=en`、`--lang=zh` | 仅为本次运行指定界面语言 |
 
 截图由 `tools\make-screenshots.ps1` 生成。设计说明见 [docs/design.md](docs/design.md)。

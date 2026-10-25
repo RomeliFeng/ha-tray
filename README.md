@@ -94,7 +94,7 @@ The output is written to `src\HaTray\bin\x64\Release\…\win-x64\`. The folder c
 | Option | Purpose |
 |---|---|
 | `--demo` | Runs with built-in sample data, without Home Assistant |
-| `--debug` | Enables the text debug channel (`%LOCALAPPDATA%\HaTray\debug-cmd.txt` and `debug-result.json`) |
+| `--debug` | Enables the text debug channel. Normal mode uses `%LOCALAPPDATA%\HaTray`; `--demo` uses `DemoData` beside the executable |
 | `--lang=en`, `--lang=zh` | Sets the interface language for the current run only |
 
 The screenshots are generated with `tools\make-screenshots.ps1`. Design notes are available in [docs/design.md](docs/design.md) (Chinese).

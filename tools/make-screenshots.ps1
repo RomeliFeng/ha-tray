@@ -14,7 +14,7 @@ $exe = Get-ChildItem (Join-Path $root 'src\HaTray\bin\x64\Debug') -Recurse -Filt
 if (-not $exe) { throw '没找到 HaTray.exe，先构建' }
 $out = Join-Path $root 'docs\images'
 New-Item -ItemType Directory -Force $out | Out-Null
-$data = Join-Path $env:LOCALAPPDATA 'HaTray'
+$data = Join-Path $exe.DirectoryName 'DemoData'
 $cmdFile = Join-Path $data 'debug-cmd.txt'
 $resultFile = Join-Path $data 'debug-result.json'
 

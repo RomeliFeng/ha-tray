@@ -16,20 +16,34 @@ internal sealed record Device(string Id, string Name, string? AreaId);
 /// - Size：磁贴大小（half / wide，空着按类型）；
 /// - Pinned：胶囊固定显示，收起时也看得到（房间里一个都没固定时，收起显示前两个）。
 /// </summary>
-internal sealed record TrayOptions(int? Order, string? Size, bool Pinned = false)
+internal sealed record TrayOptions(int? Order, string? Size, bool Pinned = false, ReminderRule? Reminder = null)
 {
     public const string Domain = "ha_tray";
 
     public static readonly TrayOptions None = new(null, null);
 
-    public System.Text.Json.Nodes.JsonObject? ToJson()
+    // 保留未来版本写入的其他选项；改布局不能擦掉订阅或不认识的字段。
+    public JsonObject Extra { get; init; } = [];
+
+    public static TrayOptions FromJson(JsonElement element)
     {
-        if (Order is null && Size is null && !Pinned)
+        var o = JsonNode.Parse(element.GetRawText())!.AsObject();
+        var result = new TrayOptions(
+            o["order"] is JsonValue v && v.TryGetValue<int>(out var order) ? order : null,
+            ReminderRule.Text(o["size"]),
+            o["pinned"] is JsonValue p && p.TryGetValue<bool>(out var pinned) && pinned,
+            ReminderRule.FromJson(o["reminder"]));
+        foreach (var key in new[] { "order", "size", "pinned", "reminder" })
         {
-            return null;
+            o.Remove(key);
         }
 
-        var o = new System.Text.Json.Nodes.JsonObject();
+        return result with { Extra = o };
+    }
+
+    public JsonObject? ToJson()
+    {
+        var o = (JsonObject)Extra.DeepClone();
         if (Order is { } order)
         {
             o["order"] = order;
@@ -45,7 +59,12 @@ internal sealed record TrayOptions(int? Order, string? Size, bool Pinned = false
             o["pinned"] = true;
         }
 
-        return o;
+        if (Reminder is { } reminder)
+        {
+            o["reminder"] = reminder.ToJson();
+        }
+
+        return o.Count == 0 ? null : o;
     }
 }
 
@@ -61,6 +80,17 @@ internal sealed class Entity(string entityId)
 
     // ---- 注册表 ----
     public bool InRegistry { get; set; }
+
+    public string? RegistryId { get; set; }
+
+    public JsonObject Capabilities { get; set; } = [];
+
+    public IReadOnlyList<string> StateOptions => Strings("options").Count > 0 ? Strings("options") : CapabilityStrings("options");
+
+    public IReadOnlyList<string> EventTypes => Strings("event_types").Count > 0 ? Strings("event_types") : CapabilityStrings("event_types");
+
+    private IReadOnlyList<string> CapabilityStrings(string key) => Capabilities[key] is JsonArray a
+        ? [.. a.OfType<JsonValue>().Select(v => v.ToString())] : [];
 
     public string? Name { get; set; }
 

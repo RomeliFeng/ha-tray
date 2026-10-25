@@ -10,7 +10,9 @@ namespace HaTray;
 /// </summary>
 internal sealed class Settings
 {
-    public static readonly string DataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HaTray");
+    public static readonly string DataDir = Environment.GetCommandLineArgs().Contains("--demo")
+        ? Path.Combine(AppContext.BaseDirectory, "DemoData")
+        : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HaTray");
     private static readonly string FilePath = Path.Combine(DataDir, "settings.json");
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
@@ -35,6 +37,9 @@ internal sealed class Settings
     public int Width { get; set; } = 400;
 
     public int Height { get; set; } = 640;
+
+    /// <summary>仅控制本机接收；实体订阅保存在 HA。</summary>
+    public bool RemindersEnabled { get; set; } = true;
 
     [System.Text.Json.Serialization.JsonIgnore]
     public bool IsConfigured => Uri.TryCreate(Url, UriKind.Absolute, out _) && ProtectedToken.Length > 0;

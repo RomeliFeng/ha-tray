@@ -44,6 +44,7 @@ internal sealed partial class FlyoutWindow : Window, IPanelEdits
     private string? _lastViewKey;
     private Kit _kit = null!;
     private FileSystemWatcher? _debugWatcher;
+    private string? _pendingNotification;
 
     public FlyoutWindow(Settings settings, Home home)
     {
@@ -117,6 +118,7 @@ internal sealed partial class FlyoutWindow : Window, IPanelEdits
         {
             _controller.OnStatesChanged(ids);
             _view.Refresh(ids);
+            TryOpenNotification();
         };
         _controller.Changed += id => _view.Refresh([id]);
         _view.DragEnded += () =>
@@ -138,6 +140,45 @@ internal sealed partial class FlyoutWindow : Window, IPanelEdits
     }
 
     public event Action? SettingsRequested;
+    public event Action<Entity?>? RemindersRequested;
+
+    /// <summary>调试用：把提醒窗口切到指定页（list / source）。</summary>
+    public event Action<string>? RemindersPageRequested;
+    public Func<object>? ReminderDebug { get; set; }
+    public Func<bool>? TestReminder { get; set; }
+    public Func<string, bool>? NotificationTarget { get; set; }
+
+    public void OpenReminders(Entity e) => RemindersRequested?.Invoke(e);
+
+    public void ShowNotice(string text, RECT? anchor)
+    {
+        ShowFlyout(anchor);
+        StatusText.Text = text;
+        StatusText.Visibility = Visibility.Visible;
+    }
+
+    public void ShowEntity(string id, RECT? anchor)
+    {
+        _pendingNotification = id;
+        ShowFlyout(anchor);
+        TryOpenNotification();
+    }
+
+    private void TryOpenNotification()
+    {
+        if (_pendingNotification is not { } id || !_home.HasSnapshot || _backend?.Ready != true) return;
+        _pendingNotification = null;
+        if (!_home.Entities.TryGetValue(id, out var e) || e.Hidden || e.Disabled || !e.HasState)
+        {
+            StatusText.Text = L.T("这条提醒的实体已不可用。", "The entity for this notification is no longer available.");
+            StatusText.Visibility = Visibility.Visible;
+            return;
+        }
+
+        _roomId = _rooms.Any(r => r.Id == e.AreaId) ? e.AreaId : Room.UnassignedId;
+        CloseSheet();
+        OpenDetail(e);
+    }
 
     /// <summary>失焦也不收起（调试通道的 show 命令用）。</summary>
     public bool Pinned { get; set; }
@@ -706,6 +747,38 @@ internal sealed partial class FlyoutWindow : Window, IPanelEdits
             var arg = cmd.Length > verb.Length ? cmd[(verb.Length + 1)..].Trim() : "";
             switch (verb)
             {
+                case "reminders":
+                    RemindersRequested?.Invoke(_home.Entities.GetValueOrDefault(arg));
+                    break;
+                case "reminders-page":
+                    RemindersPageRequested?.Invoke(arg);
+                    break;
+                case "notification-test":
+                    cmd += " → " + (TestReminder?.Invoke() == true ? "sent" : "failed");
+                    break;
+                case "notification-target" when _backend is DemoBackend:
+                    cmd += " → " + (NotificationTarget?.Invoke(arg) == true ? "sent" : "failed");
+                    break;
+                case "reminder-set" when _backend is DemoBackend demo:
+                {
+                    var data = System.Text.Json.Nodes.JsonNode.Parse(arg)!.AsObject();
+                    var id = data["entity"]!.GetValue<string>();
+                    if (_home.Entities.TryGetValue(id, out var target))
+                    {
+                        await demo.SetTrayOptionsAsync(id, target.Tray with { Reminder = ReminderRule.FromJson(data["rule"]) });
+                    }
+                    break;
+                }
+                case "demo-state" when _backend is DemoBackend:
+                {
+                    var data = System.Text.Json.Nodes.JsonNode.Parse(arg)!.AsObject();
+                    var id = data["entity"]!.GetValue<string>();
+                    var plus = new System.Text.Json.Nodes.JsonObject { ["s"] = data["state"]?.DeepClone(), ["a"] = data["attributes"]?.DeepClone() ?? new System.Text.Json.Nodes.JsonObject() };
+                    var ev = new System.Text.Json.Nodes.JsonObject { ["c"] = new System.Text.Json.Nodes.JsonObject { [id] = new System.Text.Json.Nodes.JsonObject { ["+"] = plus } } };
+                    using var json = JsonDocument.Parse(ev.ToJsonString());
+                    _home.ApplyEntitiesEvent(json.RootElement);
+                    break;
+                }
                 case "show":
                     Pinned = true;
                     ShowFlyout(null);
@@ -912,6 +985,7 @@ internal sealed partial class FlyoutWindow : Window, IPanelEdits
             window = new { visible = AppWindow.IsVisible, x = AppWindow.Position.X, y = AppWindow.Position.Y, w = AppWindow.Size.Width, h = AppWindow.Size.Height, theme = Root.ActualTheme.ToString() },
             page = new { room = _roomId, page = _page.ToString(), detail = _detailId, editing = _view.Editing, sheet = SheetHost.Visibility == Visibility.Visible, rows = Body.Children.Count, drawn = _view.Debug },
             dragLog = _view.DragLog,
+            reminders = ReminderDebug?.Invoke(),
             counts = new
             {
                 entities = _home.Entities.Count, areas = _home.Areas.Count, floors = _home.Floors.Count, devices = _home.Devices.Count,
