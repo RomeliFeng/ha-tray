@@ -30,7 +30,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="Assets\*.ico;Assets\*.ttf;Assets\*.txt" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\*.ico;Assets\*.png;Assets\*.ttf;Assets\*.txt" CopyToOutputDirectory="PreserveNewest" />
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 

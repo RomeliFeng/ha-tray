@@ -29,9 +29,11 @@ internal sealed class AboutWindow : Window
         }
 
         var info = new StackPanel { Spacing = 4, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+        // 512 像素的原图，不指定解码尺寸：界面按显示大小和缩放自动解码、缩小。
         info.Children.Add(new Image
         {
-            Source = LargestFrame(iconPath),
+            Source = new BitmapImage(new Uri(Path.Combine(AppContext.BaseDirectory, "Assets", "HaTray.png"))),
+            Stretch = Stretch.Uniform,
             Width = 64,
             Height = 64,
             Margin = new Thickness(0, 0, 0, 8),
@@ -84,32 +86,6 @@ internal sealed class AboutWindow : Window
     /// <summary>版本号只来自 csproj 的 Version（去掉编译器加的 +commit 尾巴）。</summary>
     public static string Version { get; } =
         (typeof(AboutWindow).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "").Split('+')[0];
-
-    /// <summary>
-    /// 取 ico 里最大的一帧（make-icons.ps1 生成的每帧都是 PNG）。直接用 ico 当图片源时只解出第一帧 16×16，放大后是糊的。
-    /// 按逻辑像素解码，200% 缩放下就是 128 像素。
-    /// </summary>
-    private static BitmapImage LargestFrame(string icoPath)
-    {
-        var bytes = File.ReadAllBytes(icoPath);
-        var count = BitConverter.ToUInt16(bytes, 4);
-        var (best, offset, length) = (0, 0, 0);
-        for (var i = 0; i < count; i++)
-        {
-            var entry = 6 + (16 * i);
-            var size = bytes[entry] == 0 ? 256 : bytes[entry];
-            if (size > best)
-            {
-                (best, length, offset) = (size, BitConverter.ToInt32(bytes, entry + 8), BitConverter.ToInt32(bytes, entry + 12));
-            }
-        }
-
-        var image = new BitmapImage { DecodePixelType = DecodePixelType.Logical, DecodePixelWidth = 64 };
-        // 不释放流：解码可能晚于 SetSource 返回。
-        var stream = new MemoryStream(bytes, offset, length);
-        image.SetSource(stream.AsRandomAccessStream());
-        return image;
-    }
 
     private static T Resource<T>(string key) where T : class => (T)Application.Current.Resources[key];
 

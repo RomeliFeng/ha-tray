@@ -77,4 +77,6 @@ $tray = 16, 20, 24, 32, 40, 48, 64
 Write-Ico (Join-Path $assets 'TrayLight.ico') $tray ([System.Drawing.Color]::FromArgb(255, 28, 28, 28)) $false
 Write-Ico (Join-Path $assets 'TrayDark.ico') $tray ([System.Drawing.Color]::White) $false
 Write-Ico (Join-Path $assets 'HaTray.ico') (16, 24, 32, 48, 64, 128, 256) ([System.Drawing.Color]::White) $true
-Get-ChildItem $assets -Filter *.ico | Select-Object Name, Length
+# 关于窗口用的大图：512 像素，界面按显示大小和缩放自动缩小。
+[System.IO.File]::WriteAllBytes((Join-Path $assets 'HaTray.png'), (New-Png 512 ([System.Drawing.Color]::White) $true))
+Get-ChildItem $assets -Include *.ico, *.png -Recurse | Select-Object Name, Length
