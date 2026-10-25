@@ -16,7 +16,7 @@ namespace HaTray;
 /// </summary>
 public partial class App : Application
 {
-    private const int MenuOpen = 1, MenuBrowser = 2, MenuSettings = 3, MenuStartup = 4, MenuReminders = 5, MenuExit = 9;
+    private const int MenuOpen = 1, MenuBrowser = 2, MenuSettings = 3, MenuStartup = 4, MenuReminders = 5, MenuAbout = 6, MenuExit = 9;
 
     private readonly bool _demo = Environment.GetCommandLineArgs().Contains("--demo");
     private readonly Home _home = new();
@@ -206,6 +206,7 @@ public partial class App : Application
             (MenuReminders, L.T("提醒…", "Notifications…"), false),
             (MenuSettings, L.T("设置…", "Settings…"), false),
             (MenuStartup, L.T("开机时启动", "Start with Windows"), Settings.StartWithWindows),
+            (MenuAbout, L.T("关于 HA Tray", "About HA Tray"), false),
             (0, null, false),
             (MenuExit, L.T("退出", "Exit"), false),
         ]);
@@ -226,10 +227,24 @@ public partial class App : Application
             case MenuStartup:
                 Settings.StartWithWindows = !Settings.StartWithWindows;
                 break;
+            case MenuAbout:
+                ShowAbout();
+                break;
             case MenuExit:
                 Quit();
                 break;
         }
+    }
+
+    /// <summary>关于：版本号（只来自 csproj 的 Version）、许可证、仓库地址。</summary>
+    private void ShowAbout()
+    {
+        var informational = typeof(App).Assembly
+            .GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
+            .OfType<System.Reflection.AssemblyInformationalVersionAttribute>().FirstOrDefault()?.InformationalVersion ?? "";
+        var version = informational.Split('+')[0];
+        var body = $"HA Tray {version}\n\n" + L.T("MIT 许可证", "MIT License") + "\nhttps://github.com/RomeliFeng/ha-tray";
+        Win32.MessageBox(_tray?.Handle ?? 0, body, L.T("关于 HA Tray", "About HA Tray"), 0x40 /* MB_ICONINFORMATION */);
     }
 
     private async void Quit()
