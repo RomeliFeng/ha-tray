@@ -127,9 +127,6 @@ internal static class Win32
     [DllImport("user32.dll")]
     public static extern bool DestroyIcon(nint icon);
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    public static extern int MessageBox(nint hwnd, string text, string caption, uint type);
-
     [DllImport("user32.dll")]
     public static extern int GetSystemMetricsForDpi(int index, uint dpi);
 

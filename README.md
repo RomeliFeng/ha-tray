@@ -66,7 +66,7 @@ Controls are selected according to the supported features and attributes that ea
 
 Entities are added to the main view either by assigning the label in Home Assistant or through edit mode in the panel.
 
-The context menu of the tray icon provides: Open panel, Open Home Assistant in browser, Settings, Start with Windows, Exit.
+The context menu of the tray icon provides: Open panel, Open Home Assistant, Notifications, Settings, Start with Windows, About HA Tray, Exit.
 
 On Windows 11, new tray icons may be placed in the overflow area. The icon can be kept visible under Settings → Personalization → Taskbar → Other system tray icons.
 

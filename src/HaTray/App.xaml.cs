@@ -28,6 +28,7 @@ public partial class App : Application
     private TrayIcon? _tray;
     private FlyoutWindow? _flyout;
     private SettingsWindow? _settingsWindow;
+    private AboutWindow? _aboutWindow;
     private IHomeBackend? _backend;
 
     public App()
@@ -201,7 +202,7 @@ public partial class App : Application
         var cmd = _tray!.ShowMenu(x, y,
         [
             (MenuOpen, L.T("打开面板", "Open panel"), false),
-            (MenuBrowser, L.T("在浏览器中打开 Home Assistant", "Open Home Assistant in browser"), false),
+            (MenuBrowser, L.T("打开 Home Assistant", "Open Home Assistant"), false),
             (0, null, false),
             (MenuReminders, L.T("提醒…", "Notifications…"), false),
             (MenuSettings, L.T("设置…", "Settings…"), false),
@@ -236,15 +237,15 @@ public partial class App : Application
         }
     }
 
-    /// <summary>关于：版本号（只来自 csproj 的 Version）、许可证、仓库地址。</summary>
     private void ShowAbout()
     {
-        var informational = typeof(App).Assembly
-            .GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
-            .OfType<System.Reflection.AssemblyInformationalVersionAttribute>().FirstOrDefault()?.InformationalVersion ?? "";
-        var version = informational.Split('+')[0];
-        var body = $"HA Tray {version}\n\n" + L.T("MIT 许可证", "MIT License") + "\nhttps://github.com/RomeliFeng/ha-tray";
-        Win32.MessageBox(_tray?.Handle ?? 0, body, L.T("关于 HA Tray", "About HA Tray"), 0x40 /* MB_ICONINFORMATION */);
+        if (_aboutWindow is null)
+        {
+            _aboutWindow = new AboutWindow();
+            _aboutWindow.Closed += (_, _) => _aboutWindow = null;
+        }
+
+        _aboutWindow.Activate();
     }
 
     private async void Quit()
